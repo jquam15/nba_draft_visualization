@@ -1,0 +1,21 @@
+---
+title: "visualization"
+author: "John Quam"
+date: "2023-03-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(shiny)
+library(tidyverse)
+```
+
+## Data Processing
+
+**These csv files I'm loading in were acquired in a previous project of mine**
+
+```{r}
+df = 
+```
+
