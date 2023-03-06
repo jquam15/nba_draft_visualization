@@ -9,13 +9,131 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(shiny)
 library(tidyverse)
+library(ggplot2)
+library(bslib)
 ```
 
 ## Data Processing
 
 **These csv files I'm loading in were acquired in a previous project of mine**
 
+**I want high percentiles to indicate a "good" measure. For metrics like Draft Age and TOV% where we want low values, (want the player to be younger and turn the ball over less) I took 1 - percentile rank already to indicate this. So being in the top percentiles of Draft Age means you're younger.**
+
+**The percentile ranks are by position as well**
+
+**The full data set the percentile rankings are generated from are players who played at least 75% of their team's games in college and also posted a 3rd year BPM in the NBA**
+
 ```{r}
-df = 
+#read in the data
+percentiles = read.csv("visualization_data.csv") %>%
+  #The percentiles were calculated with everyone in mind, but I'm only interested in visualizing this years draft class so I'm filtering
+  filter(Draft.Year == 2022) %>%
+  #rename the columns
+  rename("Draft Year" = "Draft.Year", "Draft Age" = "Draft.Age", "Standing Reach" = "Standing.Reach", "RSCI Ranking" = "RSCI.Ranking",
+         "TS%" = "TS.", "eFG%" = "eFG.", "ORB%" = "ORB.", "DRB%" = "DRB.", "TRB%" = "TRB.", "AST%" = "AST.", "STL%" = "STL.", 
+         "BLK%" = "BLK.", "TOV%" = "TOV.", "USG%" = "USG.", "College OBPM" = "College.OBPM", "College DBPM" = "College.DBPM",
+         "College BPM" = "College.BPM")
+
+#inspect the data 
+head(percentiles)
 ```
+
+
+```{r}
+#read in the player stats
+player_stats = read.csv("modeling_2022.csv") %>%
+  #rename the columns
+  rename("Draft Year" = "Draft.Year", "Draft Age" = "Draft.Age", "Standing Reach" = "Standing.Reach", "RSCI Ranking" = "RSCI.Ranking",
+         "TS%" = "TS.", "eFG%" = "eFG.", "ORB%" = "ORB.", "DRB%" = "DRB.", "TRB%" = "TRB.", "AST%" = "AST.", "STL%" = "STL.", 
+         "BLK%" = "BLK.", "TOV%" = "TOV.", "USG%" = "USG.", "College OBPM" = "College.OBPM", "College DBPM" = "College.DBPM",
+         "College BPM" = "College.BPM")
+#inspect the data
+head(player_stats)
+```
+
+
+
+```{r}
+player = "Chet Holmgren"
+
+#this is the code to filter the dataframe down to pass it to the visualization function
+test = percentiles %>%
+  #filter by player TODO: change this to take the ui input
+  filter(Player == player) %>%
+  #these columns aren't numeric so I don't want them for the plot
+  select(-c("Player", "Position", "Draft Year", "Class", "School", "RSCI Ranking")) %>%
+  #I want 2 columns (one with the column names and another with the corresponding percentiles) as opposed to 1 row with 19 columns
+  pivot_longer(everything(), names_to = "Column", values_to = "Percentiles")
+
+percentile_plot = function(df) { 
+  #this is the code to make the visualization function
+  ggplot(df, aes(x=Percentiles, y=Column, col=Percentiles)) +
+    #plot the point
+    geom_point(aes(size=2)) +
+    #don't want a y lable
+    labs(x="Percentile Rank", y="") +
+    #want the x axis scale to be from 0 to 1 (whole percentile scale)
+    xlim(c(0,1)) +
+    scale_color_gradient(low = "lightblue", high = "red") +
+    guides(size="none") +
+    theme_bw()
+}
+
+percentile_plot(test)
+
+```
+
+
+
+## UI ans Server Components
+
+```{r}
+#get a list of unique player names
+players = unique(player_stats$Player)
+
+ui <- fluidPage(
+  #titlePanel("Player Plot"),
+  selectInput("player", "Player", players, multiple = F),
+  plotOutput("percentiles"),
+  dataTableOutput("table")
+)
+
+server <- function(input, output) {
+  #render the plot
+  output$percentiles = renderPlot({
+    percentiles %>%
+      #filter by player 
+      filter(Player == input$player) %>%
+      #these columns aren't numeric so I don't want them for the plot
+      select(-c("Player", "Position", "Draft Year", "Class", "School", "RSCI Ranking")) %>%
+      #I want 2 columns (one with the column names and another with the corresponding percentiles) as opposed to 1 row with 19 columns
+      pivot_longer(everything(), names_to = "Column", values_to = "Percentiles") %>%
+      percentile_plot() 
+  }, bg="transparent")
+  
+  #render the data table with player state
+  output$table = renderDataTable({
+    player_stats %>%
+      #only take specific columns
+      select(c("Player", "Position", "Draft Age", "Class", "School", "Height", "Weight", "RSCI Ranking", "College OBPM", 
+               "College DBPM", "College BPM"))
+  })
+}
+```
+
+
+## Shiny App
+
+```{r}
+shinyApp(ui, server)
+```
+
+
+
+
+
+
+
+
+
 
