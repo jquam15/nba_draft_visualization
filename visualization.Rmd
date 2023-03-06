@@ -38,10 +38,24 @@ percentiles = read.csv("visualization_data.csv") %>%
 head(percentiles)
 ```
 
+**172 historical prospects**
 
 ```{r}
+test = read.csv("visualization_data.csv") %>%
+  filter(Draft.Year != 2022)
+
+test
+```
+
+
+
+```{r}
+withdrawal_players = c("Drew Timme", "Matthew Mayer", "Jalen Wilson", "Julian Strawther", "Terquavion Smith", "Harrison Ingram")
+
 #read in the player stats
 player_stats = read.csv("modeling_2022.csv") %>%
+  #filter out the players that withdrew from the draft
+  filter(!Player %in% withdrawal_players) %>%
   #rename the columns
   rename("Draft Year" = "Draft.Year", "Draft Age" = "Draft.Age", "Standing Reach" = "Standing.Reach", "RSCI Ranking" = "RSCI.Ranking",
          "TS%" = "TS.", "eFG%" = "eFG.", "ORB%" = "ORB.", "DRB%" = "DRB.", "TRB%" = "TRB.", "AST%" = "AST.", "STL%" = "STL.", 
@@ -52,6 +66,7 @@ head(player_stats)
 ```
 
 
+### Define and Test the Function Used in the Shiny Plot
 
 ```{r}
 player = "Chet Holmgren"
@@ -66,6 +81,7 @@ test = percentiles %>%
   pivot_longer(everything(), names_to = "Column", values_to = "Percentiles")
 
 percentile_plot = function(df) { 
+  print(df)
   #this is the code to make the visualization function
   ggplot(df, aes(x=Percentiles, y=Column, col=Percentiles)) +
     #plot the point
@@ -74,9 +90,12 @@ percentile_plot = function(df) {
     labs(x="Percentile Rank", y="") +
     #want the x axis scale to be from 0 to 1 (whole percentile scale)
     xlim(c(0,1)) +
+    #want a color gradient with blue indicating a weakness to red indicating a strength
     scale_color_gradient(low = "lightblue", high = "red") +
+    #don't need to include size in the legend as points are all the same size (just wanted them bigger)
     guides(size="none") +
-    theme_bw()
+    #set a black and white them 
+    theme_bw() 
 }
 
 percentile_plot(test)
@@ -85,17 +104,36 @@ percentile_plot(test)
 
 
 
-## UI ans Server Components
+## UI and Server Components
 
 ```{r}
 #get a list of unique player names
 players = unique(player_stats$Player)
 
+#text to help viewer understand the plots
+descriptive_text = "This visual allows you to select a player and view what percentile rank they are in each category relative to my full NBA draft dataset going back to the 2010-11 season (the first year BPM was calculated for college basketball). This data set does not include players if they were in college during the 2019-20 and 2020-21 seasons as these players have not played long enough to post a third year NBA BPM. The goal is to compare the current year's draft prospects to past draft prospects that stuck for at least 3 years in the NBA as well as one another. In conclusion, the percentile ranks were calculated with respect to (1) the 172 college prospects that played at least 75% of their team's games in any season from 2010-11 to 2018-19 and also posted a 3rd year BPM (2) other players in the current class. Obviously, this is not perfect data, but acquiring prospect data on the number of categories I did is tricky to say the least. These plots should serve to give a general idea of a current prospect's strengths and weaknesses compared to past prospects that stuck for at least a few years in the NBA."
+
+descriptive_text2 = "One other important thing is that these percentiles are calculated by position. It would be unfair to compare the height of a PG to that of a C, so these percentiles are based on the player's position as well. Another thing to note is that high percentile rankings represent a strength in all cases in the visual. For the two columns Draft Age and TOV%, the desirable values are lower (younger and turn the ball over less). For these cases, I took 1 - percentile rank to ensure that high percentiles in these categories reflected a strength. So, in a mathematical sense, being in the 100th percentile of Draft Age means you are the oldest prospect; however, in my visual, being in the 100th percentile of Draft Age actually means you are the youngest prospect. If a player played multiple years in college, their stats in the dataset are a weighted average of all their college years with more weight being put on the most recent years."
+
+web_link = "<a href='https://jquam15.github.io/'>Return to Website</a>"
+github_link = "<a href='https://github.com/jquam15/nba_draft_visualization'>Check Out the Code on MyGithub</a>"
+
 ui <- fluidPage(
   #titlePanel("Player Plot"),
   selectInput("player", "Player", players, multiple = F),
-  plotOutput("percentiles"),
-  dataTableOutput("table")
+  fluidRow(
+    column(7, align="right", plotOutput("percentiles", width="100%")),
+    column(5, align="left", htmlOutput("descriptive_text"), htmlOutput("descriptive_text2"), htmlOutput("web_link"), htmlOutput("github_link"))
+  ),
+  
+  div(
+    #want to add some space between the table and the text/plot output
+    style = "margin-top: 3em;",
+    fluidRow(
+      column(8, align="center", offset=2, dataTableOutput("table"))
+    )
+  )
+
 )
 
 server <- function(input, output) {
@@ -103,7 +141,7 @@ server <- function(input, output) {
   output$percentiles = renderPlot({
     percentiles %>%
       #filter by player 
-      filter(Player == input$player) %>%
+      filter(Player %in% input$player) %>%
       #these columns aren't numeric so I don't want them for the plot
       select(-c("Player", "Position", "Draft Year", "Class", "School", "RSCI Ranking")) %>%
       #I want 2 columns (one with the column names and another with the corresponding percentiles) as opposed to 1 row with 19 columns
@@ -118,6 +156,24 @@ server <- function(input, output) {
       select(c("Player", "Position", "Draft Age", "Class", "School", "Height", "Weight", "RSCI Ranking", "College OBPM", 
                "College DBPM", "College BPM"))
   })
+  #this provides the first paragraph of descriptive text
+  output$descriptive_text = renderText({
+    paste("", descriptive_text, sep="\t")
+  })
+  #this provides the 2nd paragraph of descriptive text with a line in between this and the 1st paragraph
+  output$descriptive_text2 = renderText({
+    paste0("<p>", "<br>", descriptive_text2, "</p>")
+  })
+  
+  #this provides a link back to my website homepage
+  output$web_link = renderText({
+    paste0("<br>", web_link)
+  })
+  #this provides a link to the code
+  output$github_link = renderText({
+    github_link
+  })
+
 }
 ```
 
