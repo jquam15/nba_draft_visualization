@@ -1,33 +1,13 @@
----
-title: "visualization"
-author: "John Quam"
-date: "2023-03-05"
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+#load libraries
 library(shiny)
-library(tidyverse)
+library(tidyverse) 
 library(ggplot2)
 library(bslib)
 library(DT)
 library(thematic)
-```
 
-## Data Processing
-
-**These csv files I'm loading in were acquired in a previous project of mine**
-
-**I want high percentiles to indicate a "good" measure. For metrics like Draft Age and TOV% where we want low values, (want the player to be younger and turn the ball over less) I took 1 - percentile rank already to indicate this. So being in the top percentiles of Draft Age means you're younger.**
-
-**The percentile ranks are by position as well**
-
-**The full data set the percentile rankings are generated from are players who played at least 75% of their team's games in college and also posted a 3rd year BPM in the NBA**
-
-```{r}
 #read in the data
-percentiles = read.csv("visualization_data.csv") %>%
+percentiles = read.csv("https://github.com/jquam15/nba_draft_visualization/raw/main/visualization_data.csv") %>%
   #The percentiles were calculated with everyone in mind, but I'm only interested in visualizing this years draft class so I'm filtering
   filter(Draft.Year == 2022) %>%
   #rename the columns
@@ -36,14 +16,8 @@ percentiles = read.csv("visualization_data.csv") %>%
          "BLK%" = "BLK.", "TOV%" = "TOV.", "USG%" = "USG.", "College OBPM" = "College.OBPM", "College DBPM" = "College.DBPM",
          "College BPM" = "College.BPM")
 
-#inspect the data 
-head(percentiles)
-```
 
-**Read in and modify the historical prospect data (172 historical prospects)**
-
-```{r}
-historical = read.csv("visualization_data.csv") %>%
+historical = read.csv("https://github.com/jquam15/nba_draft_visualization/raw/main/visualization_data.csv") %>%
   #filter out the current prospects for historical dataset
   filter(Draft.Year != 2022) %>%
   #rename the columns
@@ -51,15 +25,13 @@ historical = read.csv("visualization_data.csv") %>%
          "TS%" = "TS.", "eFG%" = "eFG.", "ORB%" = "ORB.", "DRB%" = "DRB.", "TRB%" = "TRB.", "AST%" = "AST.", "STL%" = "STL.", 
          "BLK%" = "BLK.", "TOV%" = "TOV.", "USG%" = "USG.", "College OBPM" = "College.OBPM", "College DBPM" = "College.DBPM",
          "College BPM" = "College.BPM")
-```
 
-**Read in and modify the player stats data**
 
-```{r}
+#get list of players who withdrew from the draft
 withdrawal_players = c("Drew Timme", "Matthew Mayer", "Jalen Wilson", "Julian Strawther", "Terquavion Smith", "Harrison Ingram")
 
 #read in the player stats
-player_stats = read.csv("prospect_stats_2022.csv") %>%
+player_stats = read.csv("https://github.com/jquam15/nba_draft_visualization/raw/main/prospect_stats_2022.csv") %>%
   #filter out the players that withdrew from the draft
   filter(!Player %in% withdrawal_players) %>%
   #rename the columns
@@ -67,30 +39,11 @@ player_stats = read.csv("prospect_stats_2022.csv") %>%
          "TS%" = "TS.", "eFG%" = "eFG.", "ORB%" = "ORB.", "DRB%" = "DRB.", "TRB%" = "TRB.", "AST%" = "AST.", "STL%" = "STL.", 
          "BLK%" = "BLK.", "TOV%" = "TOV.", "USG%" = "USG.", "College OBPM" = "College.OBPM", "College DBPM" = "College.DBPM",
          "College BPM" = "College.BPM")
-#inspect the data
-head(player_stats)
-```
 
-
-### Define and Test the Function Used in the Shiny Plot
-
-**Test the function and corresponding data frame filtering to output the plot**
-
-```{r}
-player = "Chet Holmgren"
-
-#this is the code to filter the dataframe down to pass it to the visualization function
-test = percentiles %>%
-  #filter by player TODO: change this to take the ui input
-  filter(Player == player) %>%
-  #these columns aren't numeric so I don't want them for the plot
-  select(-c("Player", "Position", "Draft Year", "Class", "School", "RSCI Ranking")) %>%
-  #I want 2 columns (one with the column names and another with the corresponding percentiles) as opposed to 1 row with 19 columns
-  pivot_longer(everything(), names_to = "Column", values_to = "Percentiles")
-
-#background, text
+#define hex codes for background, text that I used to make the plot
 color_hexes = c("#101010", "#FDF7F7")
 
+#define function used in shiny plots
 percentile_plot = function(df, player, cols) {
   print(df)
   #this is the code to make the visualization function
@@ -123,24 +76,7 @@ percentile_plot = function(df, player, cols) {
     )
 }
 
-#Test example
-percentile_plot(test, player, color_hexes)
-```
-
-
-
-**Test the function and corresponding data frame filtering to output the data table**
-
-```{r}
-#function that takes the clicked value, takes the historical dataframe, finds the distance between the clicked point and 
-#1. Get the x (value) and y (feature) coordinates of the clicked value 
-#2. Get the position of the player selected
-#3. Get the historical dataframe
-#4. Create a column that takes the absolute value of the |x input - historical df value| for each player in the historical df
-#5. Sort by that column to find the closest historical comps
-#6. Select just the columns with player name, position, draft year, and school 
-#7. Take the top 3???
-
+#define the function used to get similar players in the shiny app
 get_similar_players = function(val, col, pos, df=historical) {
   #this pipeline finds 5 the most similar historical comparisons for the selected data point
   df %>% 
@@ -154,36 +90,20 @@ get_similar_players = function(val, col, pos, df=historical) {
     select(Player, Position, `Draft Year`, School) %>%
     #take the 3 closest values
     head(3)
-  
 }
 
-#Test example
-get_similar_players(0.74, "College OBPM", "SF") #3 according to plot should be Miles Bridges, Deandre Hunter, and Rodney Hood
-```
-
-
-
-## UI and Server Components
-
-**Text to help with shiny app interpretation**
-
-```{r}
 #text to help viewer understand the plots
 descriptive_text = "This visual allows you to select a 2022 NBA draft prospect and view what percentile rank they are in each category relative to my full NBA draft prospect dataset going back to the 2010-11 season (the first year BPM was calculated for college basketball). Percentiles were computed with respect to basketball position to account for differences between certain positions (Ex: Centers are taller than Point Guards), and high percentile ranks represent a strenght in all cases. If the 'desirable' trait corresponds to a low numerical value (Ex: all else equal, younger prospects are more desirable) I took 1 minus the percentile rank to indicate the more 'desirable' trait to be a strength. The full dataset contains 172 players, but only cosists of players who have posted a 3rd year NBA BPM (excludes all prospects from 2019-20 and 2020-21 seasons by default). The goal is to compare this year's NBA draft prospects to past prospects that stuck in the NBA as well as each other, hence the 3rd year BPM criteria. Another function of this plot is that you can click a point to see a data table with the 3 most similar players to the selected prospect for the given category in the historical dataset. For example, if I clicked the point corresponding to AJ Griffin's Wingspan percentile, I would see that his wingspan was most similar to Dorian Finney-Smith. If no point is selected, player information for all 2022 draft prospects is displayed. To return to viewing the full table after clicking a point, refresh the page. Overall, this application provides a general sense of 2022 prospects's strengths and weaknesses as well as historical comparisons for specific features. " 
 #link to my github repo
 github_link = "<br>If you would like more context regarding the data please check out the README file on my<a href='https://github.com/jquam15/nba_draft_visualization'> github</a>"
 #link to my website
 web_link = "If you'd like to see more cool content check out my <a href='https://jquam15.github.io/'>website</a>"
-```
 
 
-**UI and Server components**
-
-
-```{r}
 #get a list of unique player names
 players = sort(unique(percentiles$Player))
 
+#ui component of shiny app
 ui <- fluidPage(
   #customize theme using bslib bs_theme() function
   theme = bs_theme(
@@ -204,7 +124,7 @@ ui <- fluidPage(
     column(5, align="left", htmlOutput("descriptive_text"),#, style="color:#BFA181"), 
            htmlOutput("github_link"),#, style="color:#BFA181"), 
            htmlOutput("web_link")#, style="color:#BFA181")
-           )
+    )
   ),
   #add the second row with the data table
   div(
@@ -217,6 +137,7 @@ ui <- fluidPage(
   ),
 )
 
+#server component of shiny app
 server <- function(input, output) {
   #render the plot
   output$percentiles = renderPlot({
@@ -239,7 +160,7 @@ server <- function(input, output) {
         #only take specific columns
         select(c("Player", "Position", "Draft Age", "Class", "School", "Height", "Weight", "RSCI Ranking", "College OBPM",
                  "College DBPM", "College BPM"))
-    #if there is a click then find the 3 most similar players at that position to the selected player in the selected category and return that as the table
+      #if there is a click then find the 3 most similar players at that position to the selected player in the selected category and return that as the table
     } else {
       #get all column names
       columns = colnames(percentiles)
@@ -265,7 +186,7 @@ server <- function(input, output) {
   output$descriptive_text = renderText({
     paste("", descriptive_text, sep="\t")
   })
-
+  
   #this provides a link to the code
   output$github_link = renderText({
     paste(github_link)
@@ -276,14 +197,10 @@ server <- function(input, output) {
     paste0("<br>", web_link)
   })
 }
-```
 
-
-## Shiny App
-
-```{r}
+#start the shiny app
 shinyApp(ui, server)
-```
+
 
 
 
