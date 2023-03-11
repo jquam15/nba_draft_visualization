@@ -1,0 +1,14 @@
+name: nba_draft_visualization
+title: nba_draft_visualization
+username:
+account: jquam15
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 8537480
+bundleId: 6944122
+url: https://jquam15.shinyapps.io/nba_draft_visualization/
+when: 1678501671.99068
+lastSyncTime: 1678501671.99069
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: prospect_stats_2022.csv|README.md|visualization.Rmd|visualization_data.csv

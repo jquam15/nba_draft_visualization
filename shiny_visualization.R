@@ -93,9 +93,9 @@ get_similar_players = function(val, col, pos, df=historical) {
 }
 
 #text to help viewer understand the plots
-descriptive_text = "This visual allows you to select a 2022 NBA draft prospect and view what percentile rank they are in each category relative to my full NBA draft prospect dataset going back to the 2010-11 season (the first year BPM was calculated for college basketball). Percentiles were computed with respect to basketball position to account for differences between certain positions (Ex: Centers are taller than Point Guards), and high percentile ranks represent a strenght in all cases. If the 'desirable' trait corresponds to a low numerical value (Ex: all else equal, younger prospects are more desirable) I took 1 minus the percentile rank to indicate the more 'desirable' trait to be a strength. The full dataset contains 172 players, but only cosists of players who have posted a 3rd year NBA BPM (excludes all prospects from 2019-20 and 2020-21 seasons by default). The goal is to compare this year's NBA draft prospects to past prospects that stuck in the NBA as well as each other, hence the 3rd year BPM criteria. Another function of this plot is that you can click a point to see a data table with the 3 most similar players to the selected prospect for the given category in the historical dataset. For example, if I clicked the point corresponding to AJ Griffin's Wingspan percentile, I would see that his wingspan was most similar to Dorian Finney-Smith. If no point is selected, player information for all 2022 draft prospects is displayed. To return to viewing the full table after clicking a point, refresh the page. Overall, this application provides a general sense of 2022 prospects's strengths and weaknesses as well as historical comparisons for specific features. " 
+descriptive_text = "This visual allows you to select a 2022 NBA draft prospect and view what percentile rank they are in each category relative to my historical NBA draft prospect dataset going back to the 2010-11 season (the first year BPM was calculated for college basketball). Percentiles were computed with respect to basketball position to account for differences between certain positions (Ex: Centers are taller than Point Guards), and high percentile ranks represent a strenght in all cases. If the 'desirable' trait corresponds to a low numerical value (Ex: all else equal, younger prospects are more desirable) I took 1 minus the percentile rank to indicate the more 'desirable' trait to be a strength. Another function of this plot is that you can click a point to see a data table with the 3 most similar players to the selected prospect for the given category in the historical dataset. For example, if I clicked the point corresponding to AJ Griffin's Wingspan percentile, I would see that his wingspan was most similar to Dorian Finney-Smith. If no point is selected, player information for all 2022 draft prospects is displayed. To return to viewing the full table after clicking a point, refresh the page. Overall, this application provides a general sense of 2022 NBA draft prospects' strengths and weaknesses as well as historical comparisons for specific features."  
 #link to my github repo
-github_link = "<br>If you would like more context regarding the data please check out the README file on my<a href='https://github.com/jquam15/nba_draft_visualization'> github</a>"
+github_link = "<br>If you would like more context regarding the data please check out the README file on my <a href='https://github.com/jquam15/nba_draft_visualization'> github</a>"
 #link to my website
 web_link = "If you'd like to see more cool content check out my <a href='https://jquam15.github.io/'>website</a>"
 
@@ -104,6 +104,10 @@ web_link = "If you'd like to see more cool content check out my <a href='https:/
 players = sort(unique(percentiles$Player))
 
 #ui component of shiny app
+#get a list of unique player names
+players = sort(unique(percentiles$Player))
+
+#ui component of the Shiny app
 ui <- fluidPage(
   #customize theme using bslib bs_theme() function
   theme = bs_theme(
@@ -114,16 +118,20 @@ ui <- fluidPage(
   thematic_shiny(font="auto"),
   #add title
   column(8, align="center", offset=2, titlePanel("2022 NBA Draft Prospect Visualization")),
+  #set up the descriptive text and web link elements
+  column(12, align="center", htmlOutput("descriptive_text"), 
+         htmlOutput("github_link"),
+         htmlOutput("web_link")
+  ),
   #slider input to select a player from the data (can only select 1 at a time) and style the slider accoring to css
   selectInput("player", "Player", players, multiple = F),
-  #create the first row with the plot output and text description
-  fluidRow(
-    #set up the plot output and click elements
-    column(7, align="right", plotOutput("percentiles", click="plot_click")),
-    #set up the descriptive text and web link elements
-    column(5, align="left", htmlOutput("descriptive_text"),#, style="color:#BFA181"), 
-           htmlOutput("github_link"),#, style="color:#BFA181"), 
-           htmlOutput("web_link")#, style="color:#BFA181")
+  #create the first row with the plot output
+  div(
+    #want to add some space between the plot and the text description
+    style = "margin-top: 3em;",
+    fluidRow(
+      #set up the plot output and click elements
+      column(12, plotOutput("percentiles", click="plot_click"))
     )
   ),
   #add the second row with the data table
@@ -137,7 +145,7 @@ ui <- fluidPage(
   ),
 )
 
-#server component of shiny app
+#server component of the Shiny app
 server <- function(input, output) {
   #render the plot
   output$percentiles = renderPlot({

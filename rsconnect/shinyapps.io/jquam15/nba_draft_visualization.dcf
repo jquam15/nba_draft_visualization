@@ -1,0 +1,11 @@
+name: nba_draft_visualization
+title:
+username:
+account: jquam15
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 8537480
+bundleId: 6943098
+url: https://jquam15.shinyapps.io/nba_draft_visualization/
+when: 1678477657.52967
+lastSyncTime: 1678477657.5297
