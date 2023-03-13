@@ -1,6 +1,6 @@
 # 2022 NBA Draft Visualization
 
-Welcome to my 2022 NBA Draft Visualization repository. Here I take 2022 NBA Draft prospects and visualize their percentile rank **by position** compared to other prospects this year and in years past in an interactive Shiny application. Clicking data points in a plot will also provide similar historical players in my dataset for the selected category. Follow this [link](https://jquam15.shinyapps.io/nba_draft_visualization/) to check out my application! I would also highly encourage you to check out the rest of my work on my [website](https://jquam15.github.io/)!
+Welcome to my 2022 NBA Draft Visualization repository! Here I take 2022 NBA Draft prospects and visualize their percentile rank **by position** compared to other prospects this year and in years past in an interactive Shiny application. Clicking data points in a plot will also provide similar historical players in my dataset for the selected category. Follow this [link](https://jquam15.shinyapps.io/nba_draft_visualization/) to check out my application! I would also highly encourage you to check out the rest of my work on my [website](https://jquam15.github.io/)!
 
 The file **visualization.Rmd** includes the code used to make the shiny app as well as data manipulation and code testing functions that I used in the shiny app. The file **visualization.R** contains just necessary code to run the shiny app (excludes the extra stuff in visualization.Rmd).
 
